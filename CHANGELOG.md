@@ -5,6 +5,36 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に準拠し、
 バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に従います。
 
+## [1.1.0] - 2025-11-02
+
+### 追加
+- ✨ **Emmet対応** - HTML/CSSエディタでEmmet省略記法が使用可能に
+  - `html:5`、`ul>li*3`、`.container`などの省略記法に対応
+  - Tabキーで展開
+  - emmet-codemirrorライブラリ (v1.2.4) を使用
+- 🎨 **コード整形機能 (Prettier)** - ワンクリックでコードを整形
+  - HTML、CSS、JavaScriptすべてに対応
+  - Prettier 2.8.8を使用 (jsDelivr CDN経由)
+  - キーボードショートカット: `Ctrl/Cmd + Shift + F`
+  - 現在のタブのコードを自動認識して整形
+- 🔗 **SNS共有機能** - ページのシェア機能追加
+  - Twitter (X)、Facebook、LINEに対応
+- ⚙️ **設定画面の改善** - Emmet機能の説明を追加
+
+### 変更
+- ヘッダーに「✨ 整形」ボタンを追加
+- ヘッダーに「🔗 共有」ボタンを追加
+- 共有モーダルのUI/UXを改善
+
+### 技術スタック更新
+- emmet-codemirror v1.2.4 追加
+- Prettier v2.8.8 追加 (standalone + parsers)
+
+### ライセンス変更
+- GPL-3.0 License を MIT License に変更
+
+---
+
 ## [1.0.0] - 2025-10-30
 
 ### 追加
