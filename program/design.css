@@ -12,6 +12,7 @@
     --text-secondary: #666666;
     --border-color: #cccccc;
     --accent-color: #4CAF50;
+    --accent-hover: #357938;
     --error-color: #f44336;
     --warning-color: #ff9800;
     --info-color: #2196F3;
@@ -28,6 +29,23 @@ body.dark-mode {
     --text-secondary: #858585;
     --border-color: #3e3e42;
     --accent-color: #4CAF50;
+    --accent-hover: #357938;
+}
+
+body.dark-mode .mobile-menu {
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .mobile-menu-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+body.dark-mode .footer a {
+    color: #cccccc;
+}
+
+body.dark-mode .footer a:hover {
+    color: #999999;
 }
 
 body {
@@ -38,6 +56,13 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+a {
+    color: var(--accent-color);
+}
+a:hover {
+    color: var(--accent-hover);
 }
 
 .header {
@@ -94,6 +119,18 @@ body {
     color: var(--text-primary);
 }
 
+/* ビューポート切り替えボタン */
+.btn-viewport {
+    padding: 6px 12px;
+    min-width: 40px;
+    font-size: 16px;
+}
+
+.btn-viewport.active {
+    background-color: var(--accent-color);
+    color: white;
+}
+
 img.emoji {
     height: auto;
     width: 1.2em;
@@ -105,6 +142,30 @@ img.emoji {
     display: flex;
     height: calc(100vh - 90px);
     flex: 1;
+    transition: flex-direction 0.3s ease;
+}
+
+/* 縦分割レイアウト */
+.container.vertical {
+    flex-direction: column;
+}
+
+.container.vertical .editor-panel {
+    min-width: auto;
+    min-height: 300px;
+}
+
+.container.vertical .preview-panel {
+    border-left: none;
+    border-top: 2px solid var(--border-color);
+    min-width: auto;
+    min-height: 300px;
+}
+
+.container.vertical .resizer {
+    width: 100%;
+    height: 5px;
+    cursor: row-resize;
 }
 
 .editor-panel {
@@ -180,6 +241,7 @@ img.emoji {
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .preview-header h2 {
@@ -190,10 +252,54 @@ img.emoji {
     margin: 0;
 }
 
-#preview {
+.preview-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* プレビューラッパー（レスポンシブプレビュー用） */
+.preview-wrapper {
     flex: 1;
+    overflow: auto;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+#preview {
+    width: 100%;
+    height: 100%;
     border: none;
     background-color: white;
+    transition: width 0.3s ease;
+}
+
+/* レスポンシブプレビューモード */
+.preview-panel.tablet .preview-wrapper {
+    padding: 40px 20px;
+}
+
+.preview-panel.tablet #preview {
+    width: 768px;
+    max-width: 100%;
+    height: calc(100% - 40px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.preview-panel.mobile .preview-wrapper {
+    padding: 40px 20px;
+}
+
+.preview-panel.mobile #preview {
+    width: 375px;
+    max-width: 100%;
+    height: calc(100% - 40px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .console {
@@ -250,7 +356,7 @@ img.emoji {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    z-index: 10001; /* FABボタンより上に */
     justify-content: center;
     align-items: center;
 }
@@ -433,11 +539,54 @@ img.emoji {
     font-style: italic;
 }
 
+/* 外部ライブラリ選択UI */
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.library-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.library-item:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--accent-color);
+}
+
+.library-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.library-item span {
+    font-size: 13px;
+    user-select: none;
+}
+
+.library-note {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: var(--bg-secondary);
+    border-radius: 4px;
+    border-left: 3px solid var(--info-color);
+}
+
 /* タブレット・スマホ対応 */
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
-        height: calc(100vh - 100px);
+        height: calc(100vh - 70px); /* ヘッダーが小さくなったので高さを増やす */
     }
 
     .preview-panel {
@@ -455,14 +604,13 @@ img.emoji {
     }
 
     .header-controls {
-        width: 100%;
+        width: auto; /* 実行ボタンのみなのでautoに */
     }
 
     .btn {
-        flex: 1;
-        font-size: 12px;
-        padding: 6px 10px;
-        min-height: 32px;
+        font-size: 13px;
+        padding: 8px 16px;
+        min-height: 36px;
     }
     
     .header h1 {
@@ -495,6 +643,12 @@ img.emoji {
         flex-shrink: 0;
     }
     
+    .btn-viewport {
+        padding: 4px 8px;
+        font-size: 14px;
+        min-width: 32px;
+    }
+    
     .status-indicator {
         width: 6px;
         height: 6px;
@@ -520,12 +674,21 @@ img.emoji {
     .share-url-input {
         font-size: 12px;
     }
+    
+    /* ライブラリグリッドのモバイル対応 */
+    .library-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* より小さいスマホ画面用 */
 @media (max-width: 480px) {
     .container {
-        height: calc(100vh - 90px);
+        height: calc(100vh - 65px); /* さらに高さを増やす */
+    }
+    
+    .header {
+        padding: 10px 14px;
     }
     
     .header h1 {
@@ -533,9 +696,9 @@ img.emoji {
     }
     
     .btn {
-        font-size: 11px;
-        padding: 5px 8px;
-        min-height: 28px;
+        font-size: 12px;
+        padding: 7px 14px;
+        min-height: 34px;
     }
     
     .preview-header {
@@ -556,6 +719,12 @@ img.emoji {
         padding: 4px 8px;
         flex-shrink: 0;
         min-height: 26px;
+    }
+    
+    .btn-viewport {
+        padding: 3px 6px;
+        font-size: 12px;
+        min-width: 28px;
     }
     
     .tab {
@@ -605,7 +774,7 @@ img.emoji {
     padding: 12px 24px;
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    z-index: 10000;
+    z-index: 9999; /* FABボタンより下に */
     opacity: 0;
     transform: translateY(20px);
     transition: all 0.3s ease;
@@ -636,6 +805,8 @@ img.emoji {
     flex-shrink: 0;
     display: flex;
     justify-content: center;
+    position: relative;
+    z-index: 1; /* FABボタンより下に */
 }
 
 .footer p {
@@ -676,6 +847,17 @@ img.emoji {
 .setting-label {
     font-size: 14px;
     color: var(--text-primary);
+}
+
+.setting-label a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.setting-label a:hover {
+    color: #45a049;
+    text-decoration: underline;
 }
 
 .setting-description {
@@ -748,4 +930,200 @@ input:checked + .slider:before {
 .btn-font-size.active {
     background-color: var(--accent-color);
     color: white;
+}
+
+/* デスクトップ/モバイル表示切り替え */
+.desktop-only {
+    display: flex;
+}
+
+.mobile-only {
+    display: none;
+}
+
+/* モバイル用フローティングアクションボタン (FAB) */
+.fab-button {
+    display: none;
+    position: fixed;
+    bottom: 50px; /* フッターの上に配置 */
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-color) 0%, #45a049 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    z-index: 10000; /* トーストやフッターより前面に表示 */
+    transition: all 0.3s ease;
+    animation: fabPulse 2s infinite;
+}
+
+@keyframes fabPulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6), 0 0 0 8px rgba(76, 175, 80, 0.1);
+    }
+}
+
+.fab-button:active {
+    transform: scale(0.95);
+    animation: none;
+}
+
+.fab-icon {
+    font-size: 24px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* モバイルメニューオーバーレイ */
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10001; /* FABボタンより上に */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mobile-menu-overlay.show {
+    display: block;
+    opacity: 1;
+}
+
+/* モバイルスライドアップメニュー */
+.mobile-menu {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 70vh;
+    background-color: var(--bg-primary);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 10002; /* FABボタンより上に */
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.mobile-menu.show {
+    display: block;
+    transform: translateY(0);
+}
+
+.mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-menu-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.mobile-menu-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.mobile-menu-close:hover {
+    background-color: var(--bg-secondary);
+}
+
+.mobile-menu-content {
+    padding: 10px;
+    overflow-y: auto;
+    max-height: calc(70vh - 80px);
+}
+
+.mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: left;
+    color: var(--text-primary);
+}
+
+.mobile-menu-item:hover {
+    background-color: var(--bg-secondary);
+}
+
+.mobile-menu-item:active {
+    background-color: var(--bg-tertiary);
+}
+
+.mobile-menu-icon {
+    font-size: 24px;
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-menu-text {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+    
+    .mobile-only {
+        display: flex;
+    }
+    
+    .fab-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .header {
+        padding: 12px 16px;
+    }
+    
+    .header h1 {
+        font-size: 18px;
+    }
+    
+    .header-controls {
+        gap: 8px;
+    }
 }

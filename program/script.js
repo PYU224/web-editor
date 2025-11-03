@@ -3,6 +3,53 @@ let htmlEditor, cssEditor, jsEditor;
 let currentTab = 'html';
 let debounceTimer;
 let consoleVisible = false;
+let currentViewport = 'desktop';
+let currentLayout = 'horizontal'; // horizontal or vertical
+let enabledLibraries = {};
+
+// 外部ライブラリの定義
+const libraries = {
+    'jquery': {
+        type: 'js',
+        url: 'https://code.jquery.com/jquery-3.7.1.min.js',
+        name: 'jQuery 3.7.1'
+    },
+    'bootstrap-css': {
+        type: 'css',
+        url: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
+        name: 'Bootstrap CSS 5.3'
+    },
+    'bootstrap-js': {
+        type: 'js',
+        url: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js',
+        name: 'Bootstrap JS 5.3'
+    },
+    'tailwind': {
+        type: 'css',
+        url: 'https://cdn.tailwindcss.com',
+        name: 'Tailwind CSS 3.4'
+    },
+    'vuejs': {
+        type: 'js',
+        url: 'https://unpkg.com/vue@3.4.21/dist/vue.global.js',
+        name: 'Vue.js 3.4'
+    },
+    'axios': {
+        type: 'js',
+        url: 'https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js',
+        name: 'Axios 1.6'
+    },
+    'gsap': {
+        type: 'js',
+        url: 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js',
+        name: 'GSAP 3.12'
+    },
+    'fontawesome': {
+        type: 'css',
+        url: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
+        name: 'Font Awesome 6.5'
+    }
+};
 
 // CodeMirrorエディタの作成
 function initEditors() {
@@ -13,6 +60,10 @@ function initEditors() {
         indentUnit: 2,
         tabSize: 2,
         lineWrapping: true,
+        extraKeys: {
+            'Ctrl-/': 'toggleComment',
+            'Cmd-/': 'toggleComment'
+        }
     };
 
     htmlEditor = CodeMirror(document.getElementById('html-editor'), {
@@ -146,6 +197,81 @@ function getCurrentEditor() {
     return htmlEditor;
 }
 
+// レスポンシブプレビューモード切り替え
+function setViewport(viewport) {
+    currentViewport = viewport;
+    const previewPanel = document.querySelector('.preview-panel');
+    
+    // すべてのビューポートクラスを削除
+    previewPanel.classList.remove('desktop', 'tablet', 'mobile');
+    
+    // 新しいビューポートクラスを追加
+    if (viewport !== 'desktop') {
+        previewPanel.classList.add(viewport);
+    }
+    
+    // ボタンのアクティブ状態を更新
+    document.querySelectorAll('.btn-viewport').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.viewport === viewport) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // ビューポート名の取得
+    const viewportNames = {
+        'desktop': 'デスクトップ',
+        'tablet': 'タブレット (768px)',
+        'mobile': 'モバイル (375px)'
+    };
+    
+    showToast(`プレビュー: ${viewportNames[viewport]}`, 'success');
+    localStorage.setItem('viewport', viewport);
+}
+
+// レイアウト切り替え（横分割/縦分割）
+function toggleLayout() {
+    const container = document.querySelector('.container');
+    
+    if (currentLayout === 'horizontal') {
+        container.classList.add('vertical');
+        currentLayout = 'vertical';
+        showToast('縦分割レイアウトに切り替えました', 'success');
+    } else {
+        container.classList.remove('vertical');
+        currentLayout = 'horizontal';
+        showToast('横分割レイアウトに切り替えました', 'success');
+    }
+    
+    // エディタをリフレッシュ
+    setTimeout(() => {
+        htmlEditor.refresh();
+        cssEditor.refresh();
+        jsEditor.refresh();
+    }, 100);
+    
+    localStorage.setItem('layout', currentLayout);
+}
+
+// 外部ライブラリの切り替え
+function toggleLibrary(libId) {
+    const checkbox = document.getElementById(`lib-${libId}`);
+    enabledLibraries[libId] = checkbox.checked;
+    
+    // LocalStorageに保存
+    localStorage.setItem('libraries', JSON.stringify(enabledLibraries));
+    
+    // コードを再実行して変更を反映
+    runCode();
+    
+    const libName = libraries[libId].name;
+    if (checkbox.checked) {
+        showToast(`${libName} を有効にしました`, 'success');
+    } else {
+        showToast(`${libName} を無効にしました`, 'success');
+    }
+}
+
 // SNS共有モーダルを開く
 function openShare() {
     generateShareUrl();
@@ -198,6 +324,57 @@ function shareToLine() {
     window.open(lineUrl, '_blank', 'width=550,height=420');
 }
 
+// HTMLコード内の未閉じタグを修正
+function sanitizeHTML(html) {
+    // 不完全なタグ（<で始まるが>で終わらない）を検出してエスケープ
+    let sanitized = html;
+    
+    // 最後の完全なタグの位置を見つける
+    const lastCompleteTagIndex = sanitized.lastIndexOf('>');
+    
+    // 最後の<の位置を見つける
+    const lastOpenBracketIndex = sanitized.lastIndexOf('<');
+    
+    // もし最後の<が最後の>よりも後にある場合、不完全なタグがある
+    if (lastOpenBracketIndex > lastCompleteTagIndex) {
+        // 不完全な部分を取得
+        const incompleteTag = sanitized.substring(lastOpenBracketIndex);
+        // 完全な部分を取得
+        const completePart = sanitized.substring(0, lastOpenBracketIndex);
+        // 不完全なタグをHTMLエスケープ
+        const escapedTag = incompleteTag
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        // 結合
+        sanitized = completePart + escapedTag;
+    }
+    
+    // 危険なタグ（script, style, title等）の未閉じをチェックして修正
+    const dangerousTags = ['script', 'style', 'title', 'textarea', 'iframe'];
+    
+    dangerousTags.forEach(tag => {
+        // 開きタグの数をカウント
+        const openTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
+        const closeTagRegex = new RegExp(`</${tag}>`, 'gi');
+        
+        const openMatches = sanitized.match(openTagRegex) || [];
+        const closeMatches = sanitized.match(closeTagRegex) || [];
+        
+        // 開きタグの方が多い場合、不足分の閉じタグを追加
+        const unclosedCount = openMatches.length - closeMatches.length;
+        if (unclosedCount > 0) {
+            for (let i = 0; i < unclosedCount; i++) {
+                sanitized += `</${tag}>`;
+            }
+        }
+    });
+    
+    return sanitized;
+}
+
 // コード実行
 function runCode() {
     if (!htmlEditor || !cssEditor || !jsEditor) {
@@ -208,20 +385,46 @@ function runCode() {
     const css = cssEditor.getValue();
     const js = jsEditor.getValue();
     
+    // HTMLコードを安全化（未閉じタグを修正）
+    const sanitizedHTML = sanitizeHTML(html);
+    
     // コンソールをクリア
     document.getElementById('console').innerHTML = '';
     
-    // 安全なHTML生成（scriptタグをHTMLの後に配置）
+    // 外部ライブラリのタグを生成
+    let libraryTags = '';
+    for (const [libId, enabled] of Object.entries(enabledLibraries)) {
+        if (enabled && libraries[libId]) {
+            const lib = libraries[libId];
+            if (lib.type === 'css') {
+                libraryTags += `<link rel="stylesheet" href="${lib.url}">\n    `;
+            } else if (lib.type === 'js') {
+                libraryTags += `<script src="${lib.url}"></script>\n    `;
+            }
+        }
+    }
+    
+    // 安全なHTML生成（ユーザーHTMLをコンテナで囲んで隔離）
     const content = `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>${css}</style>
+    ${libraryTags}
+    <style>
+        /* ユーザーコンテンツラッパーを透明化 */
+        #user-content-wrapper {
+            display: contents;
+        }
+        ${css}
+    </style>
 </head>
 <body>
-${html}
+<div id="user-content-wrapper">
+${sanitizedHTML}
+</div>
+<!-- ユーザーコンテンツ終了 -->
 <script>
 // コンソールログのキャプチャ
 (function() {
@@ -434,6 +637,22 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+// モバイルメニューの開閉
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    
+    if (menu.classList.contains('show')) {
+        menu.classList.remove('show');
+        overlay.classList.remove('show');
+        document.body.style.overflow = '';
+    } else {
+        menu.classList.add('show');
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
 // モーダルを開く
 function openTemplates() {
     document.getElementById('templateModal').classList.add('show');
@@ -444,6 +663,13 @@ function openExport() {
 }
 
 function openSettings() {
+    // ライブラリのチェックボックス状態を復元
+    for (const [libId, enabled] of Object.entries(enabledLibraries)) {
+        const checkbox = document.getElementById(`lib-${libId}`);
+        if (checkbox) {
+            checkbox.checked = enabled;
+        }
+    }
     document.getElementById('settingsModal').classList.add('show');
 }
 
@@ -769,13 +995,26 @@ function exportHTML() {
     const css = cssEditor.getValue();
     const js = jsEditor.getValue();
     
+    // 外部ライブラリのタグを生成
+    let libraryTags = '';
+    for (const [libId, enabled] of Object.entries(enabledLibraries)) {
+        if (enabled && libraries[libId]) {
+            const lib = libraries[libId];
+            if (lib.type === 'css') {
+                libraryTags += `    <link rel="stylesheet" href="${lib.url}">\n`;
+            } else if (lib.type === 'js') {
+                libraryTags += `    <script src="${lib.url}"></script>\n`;
+            }
+        }
+    }
+    
     const content = `<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Web Page</title>
-    <style>
+${libraryTags}    <style>
 ${css}
     </style>
 </head>
@@ -896,22 +1135,36 @@ function initResizer() {
     const resizer = document.getElementById('resizer');
     const container = document.querySelector('.container');
     const editorPanel = document.querySelector('.editor-panel');
+    const previewPanel = document.querySelector('.preview-panel');
     
     let isResizing = false;
     
     resizer.addEventListener('mousedown', function(e) {
         isResizing = true;
-        document.body.style.cursor = 'col-resize';
+        if (currentLayout === 'horizontal') {
+            document.body.style.cursor = 'col-resize';
+        } else {
+            document.body.style.cursor = 'row-resize';
+        }
     });
     
     document.addEventListener('mousemove', function(e) {
         if (!isResizing) return;
         
         const containerRect = container.getBoundingClientRect();
-        const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
         
-        if (newWidth > 20 && newWidth < 80) {
-            editorPanel.style.flex = `0 0 ${newWidth}%`;
+        if (currentLayout === 'horizontal') {
+            const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+            
+            if (newWidth > 20 && newWidth < 80) {
+                editorPanel.style.flex = `0 0 ${newWidth}%`;
+            }
+        } else {
+            const newHeight = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+            
+            if (newHeight > 20 && newHeight < 80) {
+                editorPanel.style.flex = `0 0 ${newHeight}%`;
+            }
         }
     });
     
@@ -954,6 +1207,17 @@ window.addEventListener('DOMContentLoaded', function() {
         console.warn('Emmet library not loaded. Emmet shortcuts will not work.');
     }
     
+    // 外部ライブラリの設定を復元
+    const savedLibraries = localStorage.getItem('libraries');
+    if (savedLibraries) {
+        try {
+            enabledLibraries = JSON.parse(savedLibraries);
+        } catch (e) {
+            console.error('Failed to parse saved libraries:', e);
+            enabledLibraries = {};
+        }
+    }
+    
     // エディタの初期化
     initEditors();
     
@@ -970,6 +1234,17 @@ window.addEventListener('DOMContentLoaded', function() {
     const savedFontSize = localStorage.getItem('fontSize') || 'medium';
     setFontSize(savedFontSize);
     
+    // ビューポートの復元
+    const savedViewport = localStorage.getItem('viewport') || 'desktop';
+    setViewport(savedViewport);
+    
+    // レイアウトの復元
+    const savedLayout = localStorage.getItem('layout') || 'horizontal';
+    if (savedLayout === 'vertical') {
+        document.querySelector('.container').classList.add('vertical');
+        currentLayout = 'vertical';
+    }
+    
     // 初回実行（少し遅延させてエディタが完全に準備されるのを待つ）
     setTimeout(() => {
         runCode();
@@ -979,6 +1254,15 @@ window.addEventListener('DOMContentLoaded', function() {
 
 // キーボードショートカット
 document.addEventListener('keydown', function(e) {
+    // ESCキーでモバイルメニューを閉じる
+    if (e.key === 'Escape') {
+        const menu = document.getElementById('mobileMenu');
+        if (menu && menu.classList.contains('show')) {
+            toggleMobileMenu();
+            return;
+        }
+    }
+    
     // Ctrl/Cmd + S で保存
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -998,4 +1282,7 @@ document.addEventListener('keydown', function(e) {
         e.preventDefault();
         formatCode();
     }
+    
+    // Ctrl/Cmd + F で検索（CodeMirrorのデフォルト機能）
+    // Ctrl/Cmd + / でコメントアウト（CodeMirrorのデフォルト機能）
 });

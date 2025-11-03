@@ -4,15 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Code Editor</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/default.min.css">
+    
+    <?php
+    // OGP（Open Graph Protocol）メタタグを読み込み
+    require_once './program/ogp.php';
+    ?>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/monokai.min.css">
+    <!-- 検索・置換用のダイアログCSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/dialog/dialog.min.css">
     <link rel="stylesheet" href="./program/design.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/xml/xml.min.js"></script>
+    <!-- 検索・置換機能 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/dialog/dialog.min.js"></script>
+    <!-- コメントアウト機能 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/comment/comment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
     
@@ -30,16 +43,64 @@
 <body>
     <div class="header">
         <h1>🚀 Web Code Editor</h1>
-        <div class="header-controls">
+        <div class="header-controls desktop-only">
             <button class="btn btn-secondary" onclick="openTemplates()">📄 テンプレート</button>
             <button class="btn btn-secondary" onclick="formatCode()">✨ 整形</button>
             <button class="btn btn-secondary" onclick="toggleConsole()">🔍 コンソール</button>
             <button class="btn btn-secondary" onclick="openExport()">💾 エクスポート</button>
             <button class="btn btn-secondary" onclick="openShare()">🔗 共有</button>
+            <button class="btn btn-secondary" onclick="toggleLayout()">🔄 レイアウト</button>
             <button class="btn btn-secondary" onclick="openSettings()">⚙️ 設定</button>
             <button class="btn" onclick="runCode()">▶️ 実行</button>
         </div>
+        <div class="header-controls mobile-only">
+            <button class="btn" onclick="runCode()">▶️ 実行</button>
+        </div>
     </div>
+    
+    <!-- モバイル用フローティングメニューボタン -->
+    <button class="fab-button mobile-only" onclick="toggleMobileMenu()" aria-label="メニューを開く">
+        <span class="fab-icon">⚡</span>
+    </button>
+    
+    <!-- モバイル用スライドアップメニュー -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <h3>メニュー</h3>
+            <button class="mobile-menu-close" onclick="toggleMobileMenu()">✕</button>
+        </div>
+        <div class="mobile-menu-content">
+            <button class="mobile-menu-item" onclick="toggleConsole(); toggleMobileMenu();">
+                <span class="mobile-menu-icon">🔍</span>
+                <span class="mobile-menu-text">コンソール</span>
+            </button>
+            <button class="mobile-menu-item" onclick="toggleLayout(); toggleMobileMenu();">
+                <span class="mobile-menu-icon">🔄</span>
+                <span class="mobile-menu-text">レイアウト切替</span>
+            </button>
+            <button class="mobile-menu-item" onclick="formatCode(); toggleMobileMenu();">
+                <span class="mobile-menu-icon">✨</span>
+                <span class="mobile-menu-text">コード整形</span>
+            </button>
+            <button class="mobile-menu-item" onclick="openTemplates(); toggleMobileMenu();">
+                <span class="mobile-menu-icon">📄</span>
+                <span class="mobile-menu-text">テンプレート</span>
+            </button>
+            <button class="mobile-menu-item" onclick="openExport(); toggleMobileMenu();">
+                <span class="mobile-menu-icon">💾</span>
+                <span class="mobile-menu-text">エクスポート</span>
+            </button>
+            <button class="mobile-menu-item" onclick="openShare(); toggleMobileMenu();">
+                <span class="mobile-menu-icon">🔗</span>
+                <span class="mobile-menu-text">共有</span>
+            </button>
+            <button class="mobile-menu-item" onclick="openSettings(); toggleMobileMenu();">
+                <span class="mobile-menu-icon">⚙️</span>
+                <span class="mobile-menu-text">設定</span>
+            </button>
+        </div>
+    </div>
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="toggleMobileMenu()"></div>
 
     <div class="container">
         <div class="editor-panel">
@@ -60,9 +121,16 @@
         <div class="preview-panel">
             <div class="preview-header">
                 <h2><span class="status-indicator"></span>プレビュー</h2>
-                <button class="btn btn-secondary" onclick="refreshPreview()">🔄 更新</button>
+                <div class="preview-controls">
+                    <button class="btn btn-viewport active" data-viewport="desktop" onclick="setViewport('desktop')" title="デスクトップ表示">🖥️</button>
+                    <button class="btn btn-viewport" data-viewport="tablet" onclick="setViewport('tablet')" title="タブレット表示">📱</button>
+                    <button class="btn btn-viewport" data-viewport="mobile" onclick="setViewport('mobile')" title="モバイル表示">📱</button>
+                    <button class="btn btn-secondary" onclick="refreshPreview()">🔄 更新</button>
+                </div>
             </div>
-            <iframe id="preview" sandbox="allow-scripts allow-modals"></iframe>
+            <div class="preview-wrapper">
+                <iframe id="preview" sandbox="allow-scripts allow-modals"></iframe>
+            </div>
             <div id="console" class="console"></div>
         </div>
     </div>
@@ -182,9 +250,49 @@
             <div class="settings-section">
                 <h4>✨ Emmet</h4>
                 <div class="setting-item">
-                    <span class="setting-label">Emmet省略記法が有効です</span>
+                    <span class="setting-label">Emmet省略記法が有効です<br><b><a href="https://docs.emmet.io/cheat-sheet/" target="_blank" rel="noopener">チートシートはこちら</a></b></span>
                 </div>
                 <p class="setting-description">HTML/CSSエディタでTabキーを押すと展開されます<br>例: <b>html:5, ul>li*3, .container</b></p>
+            </div>
+            
+            <div class="settings-section">
+                <h4>📚 外部ライブラリ</h4>
+                <p class="setting-description">よく使うライブラリを簡単に追加できます</p>
+                <div class="library-grid">
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-jquery" onchange="toggleLibrary('jquery')">
+                        <span>jQuery 3.7.1</span>
+                    </label>
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-bootstrap-css" onchange="toggleLibrary('bootstrap-css')">
+                        <span>Bootstrap CSS 5.3</span>
+                    </label>
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-bootstrap-js" onchange="toggleLibrary('bootstrap-js')">
+                        <span>Bootstrap JS 5.3</span>
+                    </label>
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-tailwind" onchange="toggleLibrary('tailwind')">
+                        <span>Tailwind CSS 3.4</span>
+                    </label>
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-vuejs" onchange="toggleLibrary('vuejs')">
+                        <span>Vue.js 3.4</span>
+                    </label>
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-axios" onchange="toggleLibrary('axios')">
+                        <span>Axios 1.6</span>
+                    </label>
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-gsap" onchange="toggleLibrary('gsap')">
+                        <span>GSAP 3.12</span>
+                    </label>
+                    <label class="library-item">
+                        <input type="checkbox" id="lib-fontawesome" onchange="toggleLibrary('fontawesome')">
+                        <span>Font Awesome 6.5</span>
+                    </label>
+                </div>
+                <p class="setting-description library-note">※ コード実行時に自動的にライブラリが読み込まれます</p>
             </div>
             
             <button class="btn btn-secondary modal-close-btn" onclick="closeModal('settingsModal')">閉じる</button>

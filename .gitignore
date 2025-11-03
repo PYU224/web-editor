@@ -1,0 +1,22 @@
+# 環境変数ファイル（本番環境の設定を含むため）
+.env
+
+# エディタ・IDE設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ログファイル
+*.log
+
+# 一時ファイル
+tmp/
+temp/
+cache/
